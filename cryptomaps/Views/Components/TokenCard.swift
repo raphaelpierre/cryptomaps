@@ -1,23 +1,27 @@
 import SwiftUI
 
 struct TokenCard: View {
+    @EnvironmentObject private var currencySettings: CurrencySettings
+    @AppStorage("showPercentageChange") private var showPercentageChange = true
     let token: Cryptocurrency
     
     private func formatLargeNumber(_ number: Double) -> String {
         let billion = 1_000_000_000.0
         let million = 1_000_000.0
         
-        if number >= billion {
-            return String(format: "$%.2fB", number / billion)
-        } else if number >= million {
-            return String(format: "$%.2fM", number / million)
+        let convertedNumber = currencySettings.convertPrice(number)
+        
+        if convertedNumber >= billion {
+            return String(format: "%.2fB", convertedNumber / billion)
+        } else if convertedNumber >= million {
+            return String(format: "%.2fM", convertedNumber / million)
         } else {
-            return String(format: "$%.2f", number)
+            return String(format: "%.2f", convertedNumber)
         }
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 16) {
             // Token info
             HStack(spacing: 16) {
                 AsyncImage(url: URL(string: token.image)) { phase in
@@ -61,28 +65,30 @@ struct TokenCard: View {
                     Text("Price")
                         .foregroundColor(.gray)
                         .font(.headline)
-                    Text("$\(String(format: "%.2f", token.lastPrice))")
+                    Text("\(currencySettings.currencySymbol)\(String(format: "%.2f", currencySettings.convertPrice(token.lastPrice)))")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("24h Change")
-                        .foregroundColor(.gray)
-                        .font(.headline)
-                    HStack(spacing: 4) {
-                        Image(systemName: token.priceChangePercentOrZero >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        Text("\(String(format: "%.2f", token.priceChangePercentOrZero))%")
+                if showPercentageChange {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("24h Change")
+                            .foregroundColor(.gray)
+                            .font(.headline)
+                        HStack(spacing: 4) {
+                            Image(systemName: token.priceChangePercentOrZero >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            Text("\(String(format: "%.2f", token.priceChangePercentOrZero))%")
+                        }
+                        .foregroundColor(token.priceChangePercentOrZero >= 0 ? .green : .red)
                     }
-                    .foregroundColor(token.priceChangePercentOrZero >= 0 ? .green : .red)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("24h Volume")
                         .foregroundColor(.gray)
                         .font(.headline)
-                    Text(formatLargeNumber(token.volume))
+                    Text("\(currencySettings.currencySymbol)\(formatLargeNumber(token.volume))")
                         .font(.title3)
                         .foregroundColor(.white)
                 }

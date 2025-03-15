@@ -1,6 +1,6 @@
 import Foundation
 
-struct Cryptocurrency: Decodable, Identifiable {
+struct Cryptocurrency: Codable, Identifiable {
     let id: String
     let symbol: String
     let name: String

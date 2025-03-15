@@ -10,15 +10,30 @@ class CryptoViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let baseURL = "https://api.coingecko.com/api/v3"
     private var lastFetchTime: Date?
+    private let cacheExpirationTime: TimeInterval = 30 // 30 seconds cache
+    private let rateLimitInterval: TimeInterval = 10 // 10 seconds between requests
     
     init() {
         print("CryptoViewModel initialized")
+        // Load cached data if available
+        if let cachedData = UserDefaults.standard.data(forKey: "cachedCryptoData"),
+           let lastFetch = UserDefaults.standard.object(forKey: "lastCryptoFetch") as? Date,
+           Date().timeIntervalSince(lastFetch) < cacheExpirationTime {
+            do {
+                let cached = try JSONDecoder().decode([Cryptocurrency].self, from: cachedData)
+                self.cryptocurrencies = cached.sorted { $0.marketCap > $1.marketCap }
+                print("Loaded \(cached.count) cryptocurrencies from cache")
+            } catch {
+                print("Error decoding cached data: \(error)")
+            }
+        }
         fetchCryptocurrencies()
     }
     
     func fetchCryptocurrencies() {
-        // Rate limiting: Wait at least 10 seconds between requests
-        if let lastFetch = lastFetchTime, Date().timeIntervalSince(lastFetch) < 10 {
+        // Check rate limiting
+        if let lastFetch = lastFetchTime,
+           Date().timeIntervalSince(lastFetch) < rateLimitInterval {
             print("Rate limiting: Waiting before next request")
             return
         }
@@ -27,7 +42,7 @@ class CryptoViewModel: ObservableObject {
         lastFetchTime = Date()
         print("Starting to fetch cryptocurrencies...")
         
-        let urlString = "\(baseURL)/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=1&sparkline=false"
+        let urlString = "\(baseURL)/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
         print("URL: \(urlString)")
         
         guard let url = URL(string: urlString) else {
@@ -67,8 +82,16 @@ class CryptoViewModel: ObservableObject {
                     self?.error = error
                 }
             } receiveValue: { [weak self] cryptocurrencies in
+                guard let self = self else { return }
                 print("Received \(cryptocurrencies.count) cryptocurrencies")
-                self?.cryptocurrencies = cryptocurrencies.sorted { $0.volume > $1.volume }
+                let sorted = cryptocurrencies.sorted { $0.marketCap > $1.marketCap }
+                self.cryptocurrencies = sorted
+                
+                // Cache the new data
+                if let encoded = try? JSONEncoder().encode(sorted) {
+                    UserDefaults.standard.set(encoded, forKey: "cachedCryptoData")
+                    UserDefaults.standard.set(Date(), forKey: "lastCryptoFetch")
+                }
             }
             .store(in: &cancellables)
     }

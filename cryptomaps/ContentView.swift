@@ -12,6 +12,7 @@ struct ContentView: View {
     
     var body: some View {
         TabView {
+            // Market Tab
             NavigationView {
                 Group {
                     if viewModel.isLoading {
@@ -56,12 +57,26 @@ struct ContentView: View {
                 Label("Market", systemImage: "chart.line.uptrend.xyaxis")
             }
             
-            Text("Watchlist")
+            // Watchlist Tab
+            WatchlistView()
                 .tabItem {
-                    Label("Watchlist", systemImage: "star")
+                    Label("Watchlist", systemImage: "star.fill")
                 }
             
-            Text("Settings")
+            // Sectors Tab
+            SectorsView()
+                .tabItem {
+                    Label("Sectors", systemImage: "square.grid.2x2")
+                }
+            
+            // Global Tab
+            GlobalView()
+                .tabItem {
+                    Label("Global", systemImage: "globe")
+                }
+            
+            // Settings Tab
+            SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
