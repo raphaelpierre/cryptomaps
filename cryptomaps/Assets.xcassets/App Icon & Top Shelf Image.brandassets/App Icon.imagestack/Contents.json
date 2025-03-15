@@ -13,5 +13,11 @@
     {
       "filename" : "Back.imagestacklayer"
     }
-  ]
+  ],
+  "properties" : {
+    "canvasSize" : {
+      "height" : 240,
+      "width" : 400
+    }
+  }
 }

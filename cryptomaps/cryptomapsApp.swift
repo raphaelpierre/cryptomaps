@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct cryptomapsApp: App {
+    @StateObject private var cryptoViewModel = CryptoViewModel()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(cryptoViewModel)
         }
     }
 }
