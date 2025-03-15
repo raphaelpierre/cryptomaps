@@ -4,6 +4,10 @@
     "version" : 1
   },
   "properties" : {
+    "frame-center" : {
+      "x" : 200,
+      "y" : 120
+    },
     "frame-size" : {
       "height" : 240,
       "width" : 400
