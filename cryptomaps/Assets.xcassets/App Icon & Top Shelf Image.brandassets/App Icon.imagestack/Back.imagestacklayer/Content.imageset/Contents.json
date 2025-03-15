@@ -1,10 +1,12 @@
 {
   "images" : [
     {
+      "filename" : "teslogoapp.png",
       "idiom" : "tv",
       "scale" : "1x"
     },
     {
+      "filename" : "teslogoapp 1.png",
       "idiom" : "tv",
       "scale" : "2x"
     }

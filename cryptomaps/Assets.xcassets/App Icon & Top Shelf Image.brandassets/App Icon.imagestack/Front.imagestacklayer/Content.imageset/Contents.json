@@ -1,10 +1,12 @@
 {
   "images" : [
     {
+      "filename" : "wallet-62.png",
       "idiom" : "tv",
       "scale" : "1x"
     },
     {
+      "filename" : "wallet-62 1.png",
       "idiom" : "tv",
       "scale" : "2x"
     }
