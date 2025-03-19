@@ -2,6 +2,8 @@ import SwiftUI
 
 struct WatchlistView: View {
     @StateObject private var viewModel = WatchlistViewModel()
+    @ObservedObject var cryptoViewModel: CryptoViewModel
+    @State private var selectedToken: Cryptocurrency?
     
     var body: some View {
         NavigationView {
@@ -44,7 +46,7 @@ struct WatchlistView: View {
                         ], spacing: 24) {
                             ForEach(viewModel.watchlistCryptos) { crypto in
                                 Button {
-                                    // Handle selection
+                                    selectedToken = crypto
                                 } label: {
                                     TokenCard(token: crypto)
                                 }
@@ -56,13 +58,20 @@ struct WatchlistView: View {
                 }
             }
             .navigationTitle("Watchlist")
+            #if os(iOS) || os(macOS)
+            .navigationBarTitleDisplayMode(.large)
+            #endif
         }
+        .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             viewModel.fetchWatchlistData()
+        }
+        .sheet(item: $selectedToken) { token in
+            TokenDetailView(token: token, watchlistViewModel: viewModel, cryptoViewModel: cryptoViewModel)
         }
     }
 }
 
 #Preview {
-    WatchlistView()
+    WatchlistView(cryptoViewModel: CryptoViewModel())
 } 

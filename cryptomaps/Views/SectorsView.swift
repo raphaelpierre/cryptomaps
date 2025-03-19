@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SectorsView: View {
     @StateObject private var viewModel = SectorsViewModel()
+    @ObservedObject var cryptoViewModel: CryptoViewModel
     @EnvironmentObject private var currencySettings: CurrencySettings
     @State private var selectedSector: Sector?
     @State private var showingDetail = false
@@ -55,7 +56,8 @@ struct SectorsView: View {
         }
         .fullScreenCover(isPresented: $showingDetail) {
             if let sector = selectedSector {
-                SectorDetailView(sector: sector)
+                SectorDetailView(cryptoViewModel: cryptoViewModel, sector: sector)
+                    .environmentObject(currencySettings)
             }
         }
     }
@@ -162,4 +164,9 @@ struct SectorCard: View {
             return String(format: "%.2f", number)
         }
     }
+}
+
+#Preview {
+    SectorsView(cryptoViewModel: CryptoViewModel())
+        .environmentObject(CurrencySettings())
 } 

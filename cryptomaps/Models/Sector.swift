@@ -1,6 +1,6 @@
 import Foundation
 
-struct Sector: Decodable, Identifiable {
+struct Sector: Codable, Identifiable {
     let id: String
     let name: String
     let marketCap: Double?
@@ -16,7 +16,7 @@ struct Sector: Decodable, Identifiable {
         case marketCapChange24h = "market_cap_change_24h"
         case content
         case top3Coins = "top_3_coins"
-        // Note: volume_24h is not provided in the API response, defaulting to 0
+        case volume24h = "volume_24h"
     }
     
     init(from decoder: Decoder) throws {
@@ -28,6 +28,17 @@ struct Sector: Decodable, Identifiable {
         content = try container.decodeIfPresent(String.self, forKey: .content)
         top3Coins = try container.decodeIfPresent([String].self, forKey: .top3Coins) ?? []
         volume24h = 0 // Default value since it's not provided in the API
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(marketCap, forKey: .marketCap)
+        try container.encodeIfPresent(marketCapChange24h, forKey: .marketCapChange24h)
+        try container.encodeIfPresent(content, forKey: .content)
+        try container.encode(top3Coins, forKey: .top3Coins)
+        try container.encode(volume24h, forKey: .volume24h)
     }
     
     var iconName: String {

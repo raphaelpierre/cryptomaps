@@ -3,9 +3,8 @@ import SwiftUI
 struct TokenGridView: View {
     let tokens: [Cryptocurrency]
     @State private var selectedToken: Cryptocurrency?
-    @State private var showingDetail = false
-    @State private var showingWatchlistMenu = false
     @StateObject private var watchlistViewModel = WatchlistViewModel()
+    @ObservedObject var cryptoViewModel: CryptoViewModel
     
     var body: some View {
         ScrollView {
@@ -15,7 +14,6 @@ struct TokenGridView: View {
                 ForEach(tokens) { token in
                     Button {
                         selectedToken = token
-                        showingDetail = true
                     } label: {
                         TokenCard(token: token)
                             .overlay(
@@ -31,11 +29,7 @@ struct TokenGridView: View {
                     .buttonStyle(.card)
                     .contextMenu {
                         Button {
-                            if watchlistViewModel.isInWatchlist(token) {
-                                watchlistViewModel.toggleWatchlist(for: token)
-                            } else {
-                                watchlistViewModel.toggleWatchlist(for: token)
-                            }
+                            watchlistViewModel.toggleWatchlist(for: token)
                         } label: {
                             Label(
                                 watchlistViewModel.isInWatchlist(token) ? "Remove from Watchlist" : "Add to Watchlist",
@@ -47,10 +41,12 @@ struct TokenGridView: View {
             }
             .padding(32)
         }
-        .fullScreenCover(isPresented: $showingDetail) {
-            if let token = selectedToken {
-                TokenDetailView(token: token)
-            }
+        .sheet(item: $selectedToken) { token in
+            TokenDetailView(
+                token: token, 
+                watchlistViewModel: watchlistViewModel,
+                cryptoViewModel: cryptoViewModel
+            )
         }
     }
 }
@@ -58,18 +54,20 @@ struct TokenGridView: View {
 struct PriceInfoRow: View {
     let title: String
     let value: String
-    var valueColor: Color = .white
+    var valueColor: Color = .primary
     
     var body: some View {
-        HStack {
+        HStack(alignment: .center) {
             Text(title)
-                .font(.title2)
-                .foregroundColor(.gray)
+                .font(.headline)
+                .foregroundColor(.secondary)
             Spacer()
             Text(value)
-                .font(.title)
+                .font(.body)
                 .fontWeight(.semibold)
                 .foregroundColor(valueColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
     }
 }
@@ -77,6 +75,6 @@ struct PriceInfoRow: View {
 // Preview Provider
 struct TokenGridView_Previews: PreviewProvider {
     static var previews: some View {
-        TokenGridView(tokens: [])
+        TokenGridView(tokens: [], cryptoViewModel: CryptoViewModel())
     }
 } 

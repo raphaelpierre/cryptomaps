@@ -31,8 +31,26 @@ struct Cryptocurrency: Codable, Identifiable {
     }
 }
 
-struct PriceHistory: Identifiable {
+struct PriceHistory: Codable, Identifiable {
     let id = UUID()
     let timestamp: Date
     let value: Double
+    
+    enum CodingKeys: String, CodingKey {
+        case timestamp
+        case value
+    }
+    
+    // Custom encoding to handle UUID which isn't part of the API data
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(value, forKey: .value)
+    }
+    
+    // Default initializer
+    init(id: UUID = UUID(), timestamp: Date, value: Double) {
+        self.timestamp = timestamp
+        self.value = value
+    }
 } 

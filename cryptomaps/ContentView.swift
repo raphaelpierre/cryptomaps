@@ -48,7 +48,10 @@ struct ContentView: View {
                             .buttonStyle(.card)
                         }
                     } else {
-                        TokenGridView(tokens: viewModel.cryptocurrencies)
+                        TokenGridView(
+                            tokens: viewModel.cryptocurrencies,
+                            cryptoViewModel: viewModel
+                        )
                     }
                 }
                 .navigationTitle("Crypto Market")
@@ -58,13 +61,13 @@ struct ContentView: View {
             }
             
             // Watchlist Tab
-            WatchlistView()
+            WatchlistView(cryptoViewModel: viewModel)
                 .tabItem {
                     Label("Watchlist", systemImage: "star.fill")
                 }
             
             // Sectors Tab
-            SectorsView()
+            SectorsView(cryptoViewModel: viewModel)
                 .tabItem {
                     Label("Sectors", systemImage: "square.grid.2x2")
                 }
@@ -82,7 +85,10 @@ struct ContentView: View {
                 }
         }
         .onAppear {
-            viewModel.fetchCryptocurrencies()
+            // Fetch data once at startup, then let individual views refresh as needed
+            if viewModel.cryptocurrencies.isEmpty {
+                viewModel.fetchCryptocurrencies()
+            }
         }
     }
 }

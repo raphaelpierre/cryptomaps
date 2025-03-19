@@ -5,6 +5,32 @@ All notable changes to CryptoMaps will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2024-06-01
+
+### Added
+- Detailed view for Global Market coin dominance
+- Enhanced caching system with memory-first approach
+- Automatic retry mechanism for network failures
+- Improved image caching across the app
+- Time-based caching for price history data
+- Shared view model architecture for better state management
+
+### Changed
+- Extended cache expiration from 30 seconds to 10 minutes
+- Improved error handling with graceful fallback to cached data
+- Optimized TokenDetailView with component extraction
+- Enhanced GlobalView with interactive dominance cards
+- Optimized SectorDetailView with fixed-height containers
+- Reduced redundant API calls with smarter fetch logic
+
+### Fixed
+- Black screen issue in GlobalDetailView
+- Compiler warnings related to onChange in tvOS 17
+- Layout issues in circular progress indicators
+- Memory leaks in image loading and caching
+- Performance bottlenecks in data formatting
+- Codable conformance issues in data models
+
 ## [1.1.0] - 2024-05-15
 
 ### Added
@@ -53,5 +79,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecated CryptoLogoImage component
 - Old app icon assets
 
+[1.2.0]: https://github.com/raphaelpierre/cryptomaps/releases/tag/v1.2.0
 [1.1.0]: https://github.com/raphaelpierre/cryptomaps/releases/tag/v1.1.0
 [1.0.0]: https://github.com/raphaelpierre/cryptomaps/releases/tag/v1.0.0 

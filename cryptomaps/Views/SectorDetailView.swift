@@ -2,142 +2,240 @@ import SwiftUI
 
 struct SectorDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var currencySettings: CurrencySettings
-    @FocusState private var isCloseButtonFocused: Bool
+    @ObservedObject var cryptoViewModel: CryptoViewModel
     let sector: Sector
     
-    private func formatLargeNumber(_ number: Double) -> String {
-        let billion = 1_000_000_000.0
-        let million = 1_000_000.0
+    // Cache formatted values
+    private let marketCapFormatted: String
+    private let changeFormatted: String
+    private let coinUrls: [String]
+    
+    init(cryptoViewModel: CryptoViewModel, sector: Sector) {
+        self.cryptoViewModel = cryptoViewModel
+        self.sector = sector
         
-        if number >= billion {
-            return String(format: "%.2fB", number / billion)
-        } else if number >= million {
-            return String(format: "%.2fM", number / million)
+        // Pre-compute formatted values to avoid recalculation during rendering
+        if let marketCap = sector.marketCap {
+            let billion = 1_000_000_000.0
+            let million = 1_000_000.0
+            
+            if marketCap >= billion {
+                self.marketCapFormatted = String(format: "%.2fB", marketCap / billion)
+            } else if marketCap >= million {
+                self.marketCapFormatted = String(format: "%.2fM", marketCap / million)
+            } else {
+                self.marketCapFormatted = String(format: "%.2f", marketCap)
+            }
         } else {
-            return String(format: "%.2f", number)
+            self.marketCapFormatted = "N/A"
         }
+        
+        if let change = sector.marketCapChange24h {
+            self.changeFormatted = String(format: "%.1f", change)
+        } else {
+            self.changeFormatted = "0.0"
+        }
+        
+        // Cache a copy of the coin URLs to avoid repeated array access
+        self.coinUrls = Array(sector.top3Coins.prefix(3))
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                // Header
-                HStack(spacing: 20) {
-                    Image(systemName: sector.iconName)
-                        .font(.system(size: 80))
-                        .foregroundColor(.white)
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Header - simplified layout
+                    headerView
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(sector.name)
-                            .font(.system(size: 48, weight: .bold))
-                            .foregroundColor(.white)
+                    // Content cards - extracted to separate views
+                    VStack(spacing: 20) {
+                        // Market Cap
+                        if let marketCap = sector.marketCap {
+                            marketCapCard(marketCap: marketCap)
+                        }
                         
-                        if let change = sector.marketCapChange24h {
-                            Text("\(String(format: "%.1f", change))% (24h)")
-                                .font(.title)
-                                .foregroundColor(change >= 0 ? .green : .red)
+                        // Description
+                        if let content = sector.content {
+                            descriptionCard(content: content)
+                        }
+                        
+                        // Top Coins
+                        if !coinUrls.isEmpty {
+                            topCoinsCard
                         }
                     }
-                    
-                    Spacer()
-                    
-                    // Close Button
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Close")
-                            .font(.title2)
-                            .padding(.horizontal, 40)
-                            .padding(.vertical, 16)
-                    }
-                    .buttonStyle(.card)
-                    .focused($isCloseButtonFocused)
+                    .padding(.horizontal)
                 }
-                .padding(.top, 32)
-                
-                // Market Data
-                if let marketCap = sector.marketCap {
-                    VStack(spacing: 24) {
-                        HStack {
-                            Text("Market Cap")
-                                .font(.title2)
-                                .foregroundColor(.gray)
-                            Spacer()
-                            Text("\(currencySettings.currencySymbol)\(formatLargeNumber(marketCap))")
-                                .font(.title)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                        }
-                    }
-                    .padding(40)
-                    .background(Color(white: 0.15))
-                    .cornerRadius(20)
-                }
-                
-                // Description
-                if let content = sector.content {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("About")
-                            .font(.title2)
-                            .foregroundColor(.gray)
-                        
-                        Text(content)
-                            .font(.body)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding(40)
-                    .background(Color(white: 0.15))
-                    .cornerRadius(20)
-                }
-                
-                // Top Coins
-                if !sector.top3Coins.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Top Coins")
-                            .font(.title2)
-                            .foregroundColor(.gray)
-                        
-                        HStack(spacing: 24) {
-                            ForEach(sector.top3Coins.prefix(3), id: \.self) { coinUrl in
-                                AsyncImage(url: URL(string: coinUrl)) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        ProgressView()
-                                            .frame(width: 64, height: 64)
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 64, height: 64)
-                                    case .failure:
-                                        Image(systemName: "bitcoinsign.circle.fill")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 64, height: 64)
-                                    @unknown default:
-                                        Image(systemName: "bitcoinsign.circle.fill")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 64, height: 64)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(40)
-                    .background(Color(white: 0.15))
-                    .cornerRadius(20)
-                }
-                
-                Spacer(minLength: 32)
             }
-            .padding(.horizontal, 32)
+            .navigationTitle(sector.name)
+            #if os(iOS) || os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .background(colorScheme == .dark ? Color.black : Color.white)
         }
-        .background(Color.black)
-        .onAppear {
-            isCloseButtonFocused = true
-        }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
+    
+    // MARK: - Extracted Views for Better Performance
+    
+    private var headerView: some View {
+        HStack(spacing: 16) {
+            // Icon with fixed size to avoid layout shifts
+            ZStack {
+                Circle()
+                    .fill(Color.secondary.opacity(0.1))
+                    .frame(width: 70, height: 70)
+                
+                Image(systemName: sector.iconName)
+                    .font(.system(size: 40))
+                    .foregroundColor(.primary)
+            }
+            .frame(width: 70, height: 70)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(sector.name)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
+                if let change = sector.marketCapChange24h {
+                    Text("\(changeFormatted)% (24h)")
+                        .font(.headline)
+                        .foregroundColor(change >= 0 ? .green : .red)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+    
+    private func marketCapCard(marketCap: Double) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Market Cap")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(currencySettings.currencySymbol)\(marketCapFormatted)")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding()
+        .background(cardBackground)
+        .cornerRadius(12)
+    }
+    
+    private func descriptionCard(content: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("About")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            Text(content)
+                .font(.body)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true) // Ensures text layout is calculated once
+        }
+        .padding()
+        .background(cardBackground)
+        .cornerRadius(12)
+    }
+    
+    private var topCoinsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Top Coins")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            HStack(spacing: 16) {
+                ForEach(coinUrls, id: \.self) { coinUrl in
+                    CoinImageView(imageUrl: coinUrl)
+                }
+            }
+        }
+        .padding()
+        .background(cardBackground)
+        .cornerRadius(12)
+    }
+    
+    // Shared background for all cards
+    private var cardBackground: some View {
+        Color.secondary.opacity(0.1)
+    }
+}
+
+// MARK: - Helper Components
+
+struct CoinImageView: View {
+    let imageUrl: String
+    
+    var body: some View {
+        AsyncImage(url: URL(string: imageUrl)) { phase in
+            switch phase {
+            case .empty:
+                ZStack {
+                    Circle()
+                        .fill(Color.secondary.opacity(0.2))
+                        .frame(width: 64, height: 64)
+                    ProgressView()
+                }
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(Circle())
+            case .failure:
+                ZStack {
+                    Circle()
+                        .fill(Color.secondary.opacity(0.2))
+                        .frame(width: 64, height: 64)
+                    Image(systemName: "bitcoinsign.circle.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(12)
+                        .foregroundColor(.orange)
+                }
+            @unknown default:
+                EmptyView()
+            }
+        }
+        .frame(width: 64, height: 64)
+    }
+}
+
+#Preview {
+    let sectorJSON = """
+    {
+        "id": "defi",
+        "name": "DeFi",
+        "market_cap": 45000000000,
+        "market_cap_change_24h": 2.5,
+        "content": "Decentralized Finance (DeFi) is an emerging financial technology based on secure distributed ledgers similar to those used by cryptocurrencies.",
+        "top_3_coins": [
+            "https://assets.coingecko.com/coins/images/12632/small/IMG_0440.PNG",
+            "https://assets.coingecko.com/coins/images/13442/small/aave.png",
+            "https://assets.coingecko.com/coins/images/10775/small/COMP.png"
+        ]
+    }
+    """
+    let mockSector = try! JSONDecoder().decode(Sector.self, from: sectorJSON.data(using: .utf8)!)
+    
+    return SectorDetailView(
+        cryptoViewModel: CryptoViewModel(),
+        sector: mockSector
+    )
+    .environmentObject(CurrencySettings())
 } 
